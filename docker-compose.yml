@@ -1,0 +1,67 @@
+version: '2'
+services:
+
+  # Database
+  app-db:
+    image: mysql
+    container_name: app-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=@123456!
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=@123456!
+      - MYSQL_DATABASE=application_db
+    ports:
+      - 3307:3306
+    volumes:
+      - ./db_data:/var/lib/mysql
+    networks:
+      - network_application
+
+  # Back-end
+  app-back-end:
+    container_name: app-back-end
+    build:
+      context: ./
+      dockerfile: php-fpm.dockerfile
+    working_dir: /var/www
+    volumes:
+      - ./back-end:/var/www
+      - ./php.ini:/usr/local/etc/php/conf.d/custom.ini
+    networks:
+      - network_application
+
+  # Web Server NGINX
+  app-nginx:
+    container_name: app-nginx
+    build:
+      context: ./
+      dockerfile: nginx.dockerfile
+    working_dir: /var/www
+    volumes_from:
+      - app-back-end
+    volumes:
+      - ./vhost.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 8080:80
+    networks:
+      - network_application
+
+  # Running Front-end
+  app-front-end:
+    container_name: app-front-end
+    build:
+      context: ./
+      dockerfile: nodejs.dockerfile
+    volumes:
+      - ./front-end:/app
+    ports:
+      - 8081:8080
+    networks:
+      - network_application
+
+volumes:
+  dbdata:
+
+networks:
+  network_application:
+    driver: bridge
